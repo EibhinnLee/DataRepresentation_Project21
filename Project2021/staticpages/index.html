@@ -1,0 +1,238 @@
+<html>
+    <head>
+            <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
+            
+            <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css"
+                integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
+
+    </head>
+    <body>
+        <div id="create-update" style="display:none">
+            <h2>New Entry</h2>
+            <table id="createUpdateForm">
+                    
+                <tr>
+                    <td>Horse</td>
+                    <td><input type="text" name="Horse"></td>
+                </tr>
+                <tr>
+                    <td>Jockey</td>
+                    <td><input type="text" name="Jockey"></td>
+                </tr>
+                <tr>
+                    <td>Trainer</td>
+                    <td><input type="text" name="Trainer"></td>
+                </tr>
+                <tr>    
+                    <td>Age</td>
+                    <td><input type="text" name="Age"></td>
+                </tr>
+                <tr>
+                    <td></td><td>
+                        <button id="create-button" onclick="doCreate()">Create</button>     
+                        <button id="update-button" onclick="doUpdate()">update</button>
+                    </td>
+                </tr>
+            </table>
+        </div>
+        <div id="display">
+            <h2>Horse Race</h2>
+            <button onClick="showCreate()">Create</button>
+            <table id="horseTable" class="table">
+                <tr>
+                    <th>Racenumber</th><th>Horse</th><th>Jockey</th><th>Trainer</th><th>Age</th><th></th><th></th>
+                </tr>
+                
+            </table>
+
+        </div>
+
+        <script>
+            function showCreate(){
+                document.getElementById('display').style.display = "none"
+                document.getElementById('update-button').style.display = "none"
+                document.getElementById('create-button').style.display = "block"
+                document.getElementById('create-update').style.display = "block"
+
+            }
+            function showUpdate(thisElem){
+                var rowElement = thisElem.parentNode.parentNode;
+                book = readHorseFromRow(rowElement)
+                populateForm(horse)
+
+                document.getElementById('display').style.display = "none"
+                document.getElementById('update-button').style.display = "block"
+                document.getElementById('create-button').style.display = "none"
+                document.getElementById('create-update').style.display = "block"
+
+            }
+            function readHorseFromRow(rowElement){
+                horse = {}
+                horse.Racenumber = rowElement.getAttribute("id");
+                horse.Horse = rowElement.cells[1].firstChild.textContent
+                horse.Jockey = rowElement.cells[2].firstChild.textContent
+                horse.Trainer = rowElement.cells[3].firstChild.textContent
+                horse.Age = rowElement.cells[4].firstChild.textContent
+
+                return horse
+                
+            }
+            function populateForm(horse){
+                var form = document.getElementById('createUpdateForm')
+
+                
+                form.querySelector('input[name="Racenumber"]').value = horse.Racenumber
+                form.querySelector('input[name="Racenumber"]').disabled=true
+                
+                form.querySelector('input[name="Horse"]').value = horse.Horse
+                form.querySelector('input[name="Jockey"]').value = horse.Jockey
+                form.querySelector('input[name="Trainer"]').value = horse.Trainer
+                form.querySelector('input[name="Age"]').value = horse.Age 
+            }
+            function clearForm() {
+                    var form = document.getElementById('createUpdateForm')
+
+
+                    form.querySelector('input[name="Racenumber"]').value = ''
+                    form.querySelector('input[name="Racenumber"]').disabled = false
+
+                    form.querySelector('input[name="Horse"]').value = ''
+                    form.querySelector('input[name="Jockey"]').value = ''
+                    form.querySelector('input[name="Trainer"]').value = ''
+                    form.querySelector('input[name="Age"]').value = ''
+
+                }
+
+            function doCreate(){
+                console.log("in doCreate")
+                book= getHorseFromForm()
+                console.log(horse)
+                $.ajax({
+                    url:"/horses",
+                    data:JSON.stringify(horse),
+                    method:"POST",
+                    dataType:"JSON",
+                    contentType: "application/json; charset=utf-8",
+                    success:function(result){
+                        console.log(result) 
+                        addHorseToTable(horse)
+                        showDisplay()
+                        clearForm()
+
+                    },
+                    error:function(xhr,status,error){
+                        console.log("error"+error)
+                    }
+                })
+               
+            }
+            function doUpdate(){
+                horse = getHorseFromForm()
+                updateServer(horse)
+                
+            }
+            function updateServer(horse){
+               $.ajax({
+                    url: "/horses/"+horse.Racenumber,
+                    data: JSON.stringify(horse),
+                    method: "PUT",
+                    dataType: "JSON",
+                    contentType: "application/json; charset=utf-8",
+                    success: function (result) {
+                        console.log(result)
+                        updateTableRow(horse)
+                        showDisplay()
+                        clearForm()
+
+                    },
+                    error: function (xhr, status, error) {
+                        console.log("error" + error)
+                    }
+                })
+            }
+            function doDelete(thisElem){
+                var tableElement = document.getElementById('horseTable');
+                var rowElement = thisElem.parentNode.parentNode;
+                var index = rowElement.rowIndex;
+                Racenumber = rowElement.getAttribute("id");
+                $.ajax({
+                    url:"/horses/"+Racenumber,
+                    method:"DELETE",
+                    dateType:"JSON",
+                    success:function(result){
+                        tableElement.deleteRow(index);
+                    },
+                    error:function(xhr,status,error){
+                        console.log(error)
+                    }
+                })
+                
+            }
+            function updateTableRow(horse){
+                rowElement = document.getElementById(horse.Racenumber)
+                rowElement.cells[1].firstChild.textContent = horse.Horse
+                rowElement.cells[2].firstChild.textContent = horse.Jockey
+                rowElement.cells[3].firstChild.textContent = horse.Trainer
+                rowElement.cells[4].firstChild.textContent = horse.Age
+                //console.log("updating table")
+            }
+            function getHorseFromForm(){
+                var form = document.getElementById('createUpdateForm')
+
+                var horse = {}
+                //horse.Racenumber = form.querySelector('input[name="Racenumber"]').value
+                horse.Horse = form.querySelector('input[name="Horse"]').value
+                horse.Jockey = form.querySelector('input[name="Jockey"]').value
+                horse.Trainer = form.querySelector('input[name="Trainer"]').value
+                horse.Age = form.querySelector('input[name="Age"]').value
+                //console.log(horse)
+                 return horse
+            }
+             function showDisplay() {
+                    document.getElementById('display').style.display = "block"
+                    document.getElementById('create-update').style.display = "none"
+
+                }
+
+            function populateTable(){
+                //ajax getAll
+               $.ajax({
+                   url:'http://127.0.0.1:5000/horses',
+                   method:'GET',
+                   datatype:'JSON',
+                   success:function(results){
+                        for (horse of results){
+                             addHorseToTable(horse)
+                        }
+                   },
+                   error:function (xhr,status,error){
+                       console.log ("error "+error +" code:"+status)
+                   }
+
+               })
+               
+            }
+            function addHorseToTable(horse){
+                //console.log("working so far")
+                tableElem = document.getElementById("horseTable")
+                rowElem = tableElem.insertRow(-1)
+                rowElem.setAttribute("id", horse.Racenumber)
+                cell1 = rowElem.insertCell(0)
+                cell1.innerHTML = horse.Racenumber
+                cell2 = rowElem.insertCell(1)
+                cell2.innerHTML = horse.Horse
+                cell3 = rowElem.insertCell(2)
+                cell3.innerHTML = horse.Jockey
+                cell4 = rowElem.insertCell(3)
+                cell4.innerHTML = horse.Trainer
+                cell4 = rowElem.insertCell(4)
+                cell4.innerHTML = horse.Age
+                cell5 = rowElem.insertCell(5)
+                cell5.innerHTML = '<button onclick="showUpdate(this)">Update</button>'
+                cell6 = rowElem.insertCell(6)
+                cell6.innerHTML = '<button onclick="doDelete(this)">delete</button>'
+                 }
+            populateTable()
+        </script>
+    </body>
+</html>
